@@ -150,9 +150,22 @@ export const saveTailwindConfig = async (req: Request, res:Response):Promise<voi
     }
 }
 
+export const deleteTheme = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const authReq = req as AuthenticationRequest;
+        const theme = await Theme.findOneAndDelete({ _id: req.params.id, userId: authReq.user._id });
+        if (!theme) {
+            res.status(404).json({ success: false, message: 'Not found or not authorized.' });
+            return;
+        }
+        res.status(200).json({ success: true, message: 'Deleted.' });
+    } catch (err: any) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+}; 
+
 export const getUserThemes = async(req: Request, res: Response): Promise<void> =>{
-    try{
-        // const targetUserId = new mongoose.Types.ObjectId("60d5ec8587123456789abcde");
+    try{;
 
         // const targetUserId = "60d5ec8587123456789abcde";
 
