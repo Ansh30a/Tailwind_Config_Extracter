@@ -5,7 +5,6 @@ import { connectDB} from './config/database';
 import authRoutes from './routes/auth';
 import extractorRoutes from './routes/extractor';
 import cookieParser from 'cookie-parser';
-import { userAuthGuard } from './middleware/authMiddleware';
 
 
 dotenv.config();
@@ -28,8 +27,7 @@ app.use(cookieParser());
 // });
 
 app.use('/auth', authRoutes);
-app.use('/extractor',userAuthGuard);
-// app.use('/extractor', extractorRoutes);
+app.use('/extractor', extractorRoutes);
 
 // app.post("/auth/login", (re,res)=>{
 

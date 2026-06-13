@@ -11,9 +11,10 @@ function App() {
   return (
       <Router>
         <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
-          <Route path ="/dashboard" element={<HistoryDashboard/>}/>
+          <Route path="/dashboard" element={<HistoryDashboard/>} />
         </Routes>
       </Router>
   

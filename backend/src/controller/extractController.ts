@@ -1,6 +1,5 @@
 import{Request, Response} from 'express';
 import { Theme } from '../models/scan';
-import mongoose from 'mongoose';
 import { AuthenticationRequest } from '../middleware/authMiddleware';
 
 export const extractTailwindConfig = async(req:Request, res: Response): Promise<void> =>{
@@ -119,16 +118,13 @@ export const saveTailwindConfig = async (req: Request, res:Response):Promise<voi
             return;
         }
 
-        // const authUser = (req as any).user;
-        // if(!authUser || !authUser._id){
-        //     res.status(401).json({
-        //         success:false,
-        //         message: "Unauthorized access. Please log in to save configuration to your account"
-        //     });
-        //     return;
-        // }
+        const authReq = req as AuthenticationRequest;
+        if (!authReq.user?._id) {
+            res.status(401).json({ success: false, message: "Unauthorized access. Please log in." });
+            return;
+        }
 
-        const targetUserId = new mongoose.Types.ObjectId("60d5ec8587123456789abcde");
+        const targetUserId = authReq.user._id;
 
         const newThemeRecord = new Theme({
             userId: targetUserId,

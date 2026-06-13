@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './index.css';
 
 // type SectionColors = Record<string, string[]>;
@@ -193,13 +193,81 @@ async function copyToClipboard(text: string) {
 function App() {
 
   const [hashScanned, setHashScanned] = useState(false);
-
   const [tokens, setToken] = useState<DesignTokens | null>(null);
-
   const [isScanning, setIsScanning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
   const [copiedColor, setCopiedColor] = useState<string | null>(null);
+
+  // ── Auth state ──────────────────────────────────────────────────────────────
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Load persisted token from chrome.storage on mount
+  useEffect(() => {
+    chrome.storage.local.get('token', (result) => {
+      if (result.token) setAuthToken(result.token as string);
+    });
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    setLoginLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL.replace('/extractor', '')}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+      });
+      const data = await res.json();
+      const token = data.token;
+      if (res.ok && token) {
+        chrome.storage.local.set({ token });
+        setAuthToken(token);
+      } else {
+        setLoginError(data.message || 'Login failed');
+      }
+    } catch {
+      setLoginError('Cannot reach backend server');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    chrome.storage.local.remove('token');
+    setAuthToken(null);
+  };
+
+  // ── Show login screen if not authenticated ──────────────────────────────────
+  if (!authToken) {
+    return (
+      <div className="h-[600px] w-[360px] flex flex-col bg-slate-900 text-slate-100 font-sans antialiased p-6 justify-center">
+        <h1 className="text-xl font-bold text-teal-400 mb-1">Tailwind Extractor</h1>
+        <p className="text-[11px] text-slate-500 mb-6">Sign in to save configs to your vault</p>
+        {loginError && <p className="text-red-400 text-xs mb-3">{loginError}</p>}
+        <form onSubmit={handleLogin} className="space-y-3">
+          <input
+            type="email" required placeholder="Email"
+            value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none"
+          />
+          <input
+            type="password" required placeholder="Password"
+            value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none"
+          />
+          <button type="submit" disabled={loginLoading}
+            className="w-full bg-teal-500 hover:bg-teal-600 disabled:bg-teal-800 text-slate-950 font-bold text-sm py-2.5 rounded-lg transition-colors">
+            {loginLoading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+      </div>
+    );
+  }
 
 
 
@@ -328,9 +396,11 @@ function App() {
 
          });
          const response = await fetch(`${BACKEND_URL}/save`,{
-          
              method:'POST',
-             headers:{'Content-Type': 'application/json'},
+             headers:{
+               'Content-Type': 'application/json',
+               'Authorization': `Bearer ${authToken}`
+             },
              body: JSON.stringify({
                siteUrl: tokens.sourceUrl || "Unknown Target Site",
                siteName: (tokens.sourceUrl || "Unnamed Site") + " Theme Workspace",
@@ -342,7 +412,7 @@ function App() {
           const result  = await response.json();
 
           if(result.success){
-            alert("Awesome! Design system successfully synced to your clou dashboar workspace.");
+            alert("Awesome! Design system successfully synced to your cloud dashboard workspace.");
           } else{
             alert(`Cloud save failed: ${result.message}`);
           }
@@ -365,9 +435,14 @@ function App() {
     <div className="h-[600px] w-[360px] flex flex-col bg-slate-900 text-slate-100 font-sans antialiased overflow-hidden">
 
       {/* ── Header — */}
-      <div className="flex-shrink-0 border-b border-slate-800 px-5 py-3">
-        <h1 className="text-xl font-bold text-teal-400">Tailwind Extractor</h1>
-        <p className="text-[11px] text-slate-500">Scan any site → export tailwind.config.js</p>
+      <div className="flex-shrink-0 border-b border-slate-800 px-5 py-3 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-teal-400">Tailwind Extractor</h1>
+          <p className="text-[11px] text-slate-500">Scan any site → export tailwind.config.js</p>
+        </div>
+        <button onClick={handleLogout} className="text-[10px] text-slate-500 hover:text-red-400 transition-colors">
+          Logout
+        </button>
       </div>
 
       {/* Button */}

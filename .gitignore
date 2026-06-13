@@ -7,11 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-extension/node_modules/
-extension/.env
-
-backend/node_modules/
-backend/.env
+.env
 
 node_modules
 dist
