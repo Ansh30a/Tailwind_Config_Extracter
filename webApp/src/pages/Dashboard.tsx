@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Editor from '@monaco-editor/react';
+import { useNavigate } from 'react-router-dom';
 
 interface ThemeRecord {
     _id: string;
@@ -14,18 +15,26 @@ const HistoryDashboard: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [selectedTheme, setSelectedTheme] = useState<ThemeRecord | null>(null);
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        navigate('/login');
+    };
 
     useEffect(() => {
         const fetchWorkspaceHistory = async () => {
             try {
-                const response = await fetch('http://localhost:5000/extractor/history');
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:5000/extractor/history', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
                 const json = await response.json();
                 if (json.success) {
                     setThemes(json.data);
                 }
             } catch (error) {
                 console.error("Errror connecting to datat layer API:", error);
-
             } finally {
                 setLoading(false);
             }
@@ -174,10 +183,11 @@ const HistoryDashboard: React.FC = () => {
                         <h1 className='text-3xl font-extrabold tracking-tight text-white mb-2'>
                             Design Sysytem History Vault
                         </h1>
-                        <p className='text-sate-400 text-sm'>
+                        <p className='text-slate-400 text-sm'>
                             Review, manage, and extract Tailwind css tokens from your synchronized web workspaces.
                         </p>
                     </div>
+                    <div className="flex items-center gap-4">
                     <div className="relative w-full md:w-80">
                         <input
                             type="text"
@@ -195,6 +205,13 @@ const HistoryDashboard: React.FC = () => {
                             </button>
                         )}
 
+                    </div>
+                        <button
+                            onClick={handleLogout}
+                            className="whitespace-nowrap px-4 py-2 bg-slate-800 hover:bg-red-500/10 border border-slate-700 hover:border-red-500/30 text-slate-400 hover:text-red-400 text-xs font-semibold rounded-xl transition-all"
+                        >
+                            Logout
+                        </button>
                     </div>
                 </header>
                 {/* plateform matrix  state banner */}
